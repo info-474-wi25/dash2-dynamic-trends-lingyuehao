@@ -11,6 +11,7 @@ body {
     background-color: #f4f4f4;
 }
 
+
 /* Vertical Container Layout */
 .vertical-container {
     display: flex;
@@ -101,7 +102,7 @@ a:hover {
 
 /* Axis label styling */
 .axis-label {
-    font-size: 12px;
+    font-size: 14px;
     fill: #666;
     text-anchor: middle;
 }
