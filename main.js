@@ -19,11 +19,34 @@ d3.csv("aircraft_incidents.csv").then(data => {
     );
 
     yearlyData = Array.from(yearlyData, ([Year, Total_Fatal_Injuries]) => ({ Year, Total_Fatal_Injuries }));
-    
     yearlyData = yearlyData.filter(d => !isNaN(d.Year) && !isNaN(d.Total_Fatal_Injuries));
-
-    // Sort data by year
     yearlyData.sort((a, b) => a.Year - b.Year);
+
+    let makeYearlyData = {};
+    data.forEach(d => {
+        let year = new Date(d.Event_Date).getFullYear();
+        let make = d.Make;
+        if (!makeYearlyData[make]) makeYearlyData[make] = {};
+        if (!makeYearlyData[make][year]) makeYearlyData[make][year] = 0;
+        makeYearlyData[make][year] += +d.Total_Fatal_Injuries;
+    });
+
+ 
+    Object.keys(makeYearlyData).forEach(make => {
+        makeYearlyData[make] = Object.entries(makeYearlyData[make]).map(([Year, Total_Fatal_Injuries]) => ({
+            Year: +Year,
+            Total_Fatal_Injuries: Total_Fatal_Injuries
+        })).sort((a, b) => a.Year - b.Year);
+    });
+ 
+    const makes = ["All", ...Array.from(new Set(data.map(d => d.Make))).sort()];
+    d3.select("#makeDropdown")
+        .selectAll("option")
+        .data(makes)
+        .enter()
+        .append("option")
+        .text(d => d)
+        .attr("value", d => d);
 
     // Set scales
     const xScale = d3.scaleLinear()
@@ -33,64 +56,60 @@ d3.csv("aircraft_incidents.csv").then(data => {
     const yScale = d3.scaleLinear()
         .domain([0, d3.max(yearlyData, d => d.Total_Fatal_Injuries)])
         .range([height, 0]);
-    
-    // Add X-axis
+
+    // Draw axes
     svg.append("g")
         .attr("transform", `translate(0, ${height})`)
         .call(d3.axisBottom(xScale).tickFormat(d3.format("d")));
-    
-    // Add Y-axis
+
     svg.append("g")
         .call(d3.axisLeft(yScale));
-    
-    // Add line chart
-    const line = d3.line()
-        .x(d => xScale(d.Year))
-        .y(d => yScale(d.Total_Fatal_Injuries));
-    
-    svg.append("path")
-        .datum(yearlyData)
-        .attr("fill", "none")
-        .attr("stroke", "steelblue")
-        .attr("stroke-width", 2)
-        .attr("d", line);
-    
-    console.log("Line path created:", svg.selectAll("path").nodes());
-    
+
     // Compute trendline
-    const xMean = d3.mean(yearlyData, d => d.Year);
-    const yMean = d3.mean(yearlyData, d => d.Total_Fatal_Injuries);
-    const numerator = d3.sum(yearlyData, d => (d.Year - xMean) * (d.Total_Fatal_Injuries - yMean));
-    const denominator = d3.sum(yearlyData, d => (d.Year - xMean) ** 2);
-    const slope = numerator / denominator;
-    const intercept = yMean - slope * xMean;
-    
-    const trendData = [{ Year: 1995, Total_Fatal_Injuries: slope * 1995 + intercept }, 
-                        { Year: 2016, Total_Fatal_Injuries: slope * 2016 + intercept }];
-    
-    const trendLine = d3.line()
-        .x(d => xScale(d.Year))
-        .y(d => yScale(d.Total_Fatal_Injuries));
-    
-    svg.append("path")
-        .datum(trendData)
-        .attr("fill", "none")
-        .attr("stroke", "gray")
-        .attr("stroke-dasharray", "5,5")
-        .attr("stroke-width", 2)
-        .attr("d", trendLine);
-    
-    // Add labels
-    svg.append("text")
-        .attr("x", width / 2)
-        .attr("y", height + 40)
-        .attr("text-anchor", "middle")
-        .text("Year");
-    
-    svg.append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("x", -height / 2)
-        .attr("y", -50)
-        .attr("text-anchor", "middle")
-        .text("Total Fatal Injuries");
-})
+    function computeTrendline(data) {
+        const xMean = d3.mean(data, d => d.Year);
+        const yMean = d3.mean(data, d => d.Total_Fatal_Injuries);
+        const slope = d3.sum(data, d => (d.Year - xMean) * (d.Total_Fatal_Injuries - yMean)) /
+                      d3.sum(data, d => (d.Year - xMean) ** 2);
+        const intercept = yMean - slope * xMean;
+        return [{ Year: 1995, Total_Fatal_Injuries: slope * 1995 + intercept },
+                { Year: 2016, Total_Fatal_Injuries: slope * 2016 + intercept }];
+    }
+
+    function updateChart(makeFilter) {
+        let filteredData = makeFilter === "All" ? yearlyData : makeYearlyData[makeFilter] || [];
+
+        svg.selectAll(".data-line, .trendline").remove();
+        const line = d3.line()
+            .x(d => xScale(d.Year))
+            .y(d => yScale(d.Total_Fatal_Injuries));
+
+        svg.append("path")
+            .datum(filteredData)
+            .attr("class", "data-line")
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 2)
+            .attr("d", line);
+
+        d3.select("#trendlineToggle").on("change", function() {
+            svg.selectAll(".trendline").remove();
+            if (this.checked && filteredData.length > 1) {
+                svg.append("path")
+                    .datum(computeTrendline(filteredData))
+                    .attr("class", "trendline")
+                    .attr("fill", "none")
+                    .attr("stroke", "gray")
+                    .attr("stroke-dasharray", "5,5")
+                    .attr("stroke-width", 2)
+                    .attr("d", line);
+            }
+        }).dispatch("change");
+    }
+
+    d3.select("#makeDropdown").on("change", function() {
+        updateChart(this.value);
+    });
+
+    updateChart("All");
+});
