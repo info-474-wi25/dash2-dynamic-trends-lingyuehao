@@ -64,7 +64,7 @@ a:hover {
 .horizontal-container {
     display: flex;
     justify-content: space-between;
-    gap: 20px; /* Replaces margin-right for consistent spacing */
+    gap: 20px;  
     width: 100%;
     max-width: 960px;
     margin-bottom: 20px;
@@ -137,4 +137,9 @@ a:hover {
 
 /* CSS generated with assistance from ChatGPT and DeepSeek. */
  
- 
+#makeDropdown {
+    padding: 5px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+}
