@@ -76,7 +76,7 @@ d3.csv("aircraft_incidents.csv").then(data => {
         .attr("x", width / 2)
         .attr("y", height + margin.bottom - 10)
         .attr("text-anchor", "middle")
-        .style("font-size", "14px")
+        .style("font-size", "18px")
         .text("Year");
 
     // Y-axis label
@@ -85,7 +85,7 @@ d3.csv("aircraft_incidents.csv").then(data => {
         .attr("x", -height / 2)
         .attr("y", -margin.left + 15)
         .attr("text-anchor", "middle")
-        .style("font-size", "14px")
+        .style("font-size", "18px")
         .text("Total Fatal Injuries");
 
     function updateChart(makeFilter) {
@@ -133,7 +133,7 @@ d3.csv("aircraft_incidents.csv").then(data => {
                     .datum(trendlineData)
                     .attr("class", "trendline")
                     .attr("fill", "none")
-                    .attr("stroke", "gray")
+                    .attr("stroke", "dimgray")
                     .attr("stroke-dasharray", "5,5")
                     .attr("stroke-width", 2)
                     .attr("d", line);
